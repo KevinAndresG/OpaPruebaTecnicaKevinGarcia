@@ -1,0 +1,42 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      - sqlserver
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_SERVER: sqlserver
+      DB_USER: sa
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: OpaCreditos
+      JWT_SECRET: ${JWT_SECRET}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://backend:3000/api/webhooks/creditos}
+      CORS_ORIGIN: http://localhost:8080
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_ANALISTA_PASSWORD: ${SEED_ANALISTA_PASSWORD}
+      CARGAR_DATOS_EJEMPLO: ${CARGAR_DATOS_EJEMPLO:-true}
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  sqldata:
